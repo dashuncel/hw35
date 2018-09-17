@@ -14,18 +14,30 @@ MOSCOW-LONDON: 120 EUR
 
 URI = "http://fx.currencysystem.com/webservices/CurrencyServer4.asmx?WSDL"
 
-def getRubAmount(fromCurr, amt):
+def getRubAmount(**params):
     client = osa.Client(URI)
-    resp = client.service.ConvertToNum(toCurrency="RUB", fromCurrency=fromCurr, amount=amt, rounding=True)
+    resp = client.service.ConvertToNum(toCurrency="RUB", fromCurrency=params['curr'], amount=params['amt'], rounding=True)
     return resp
 
-amt = []# список сумм в рублях
+def readFile(fileName='currencies.txt'):
+    amt = []
+    try:
+        with open(fileName, 'r') as f:
+            for line in f:
+                curr = line.split(' ')[2].strip()
+                amount = float(line.split(' ')[1].strip())
+                amt.append({'curr': curr, 'amt': amount})
+    except FileNotFoundError as e:
+        print(f'fle {fileName} NOT found')
+    except IOError as e:
+        print(f'I/O error({e.errno}): {e.strerror}')
+    except:
+        print(f'Unexpected error: {sys.exc_info()[0]}')
+        raise
 
-with open('currencies.txt', 'r') as f:
-    for line in f:
-        curr = line.split(' ')[2].strip()
-        amount = float(line.split(' ')[1].strip())
-        amt.append(getRubAmount(curr, amount))
+    return amt
 
-print(f'Сумма затрат на поездку по курсу на {datetime.datetime.now().strftime("%d-%m-%Y %H:%M")} = ', round(sum(amt)))
+
+consumption = list(map(lambda f: getRubAmount(**f), readFile()))
+print(f'Сумма затрат на поездку по курсу на {datetime.datetime.now().strftime("%d-%m-%Y %H:%M")} = ', round(sum(consumption)))
 
